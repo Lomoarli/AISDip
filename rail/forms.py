@@ -22,6 +22,7 @@ CONTROL_LABELS = {
     'arrival_date': 'Дата прибытия',
     'raw_text': 'Распознанный текст',
     'confidence': 'Уверенность OCR, %',
+    'moving_object': 'Объект для перемещения',
     'target_type': 'Что перемещаем',
     'wagon': 'Вагон',
     'section': 'Новый участок',
@@ -124,13 +125,33 @@ class OCRConfirmForm(StyledFormMixin, forms.ModelForm):
 
 
 class MoveForm(StyledFormMixin, forms.Form):
-    target_type = forms.ChoiceField(choices=[('train', 'Состав'), ('wagon', 'Вагон')])
-    train = forms.ModelChoiceField(queryset=Train.objects.all(), required=False)
-    wagon = forms.ModelChoiceField(queryset=Wagon.objects.all(), required=False)
+    moving_object = forms.ChoiceField(choices=[])
     section = forms.ModelChoiceField(queryset=TrackSection.objects.none())
     comment = forms.CharField(required=False, widget=forms.Textarea(attrs={'rows': 2}))
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        trains = Train.objects.exclude(status=Train.DEPARTED).order_by('train_number')
+        wagons = Wagon.objects.exclude(status='departed').select_related('train').order_by('wagon_number')
+        self.fields['moving_object'].choices = [('', 'Выберите состав или вагон')] + [
+            (f'train:{train.id}', f'🚆 Состав {train.train_number}') for train in trains
+        ] + [
+            (f'wagon:{wagon.id}', f'▣ Вагон {wagon.wagon_number} — состав {wagon.train.train_number}') for wagon in wagons
+        ]
         self.fields['section'].queryset = TrackSection.objects.select_related('track').all()
         self.apply_design_classes()
+
+    def clean_moving_object(self):
+        value = self.cleaned_data['moving_object']
+        try:
+            object_type, object_id = value.split(':', 1)
+        except ValueError as exc:
+            raise forms.ValidationError('Выберите состав или вагон из списка.') from exc
+        if object_type not in {'train', 'wagon'} or not object_id.isdigit():
+            raise forms.ValidationError('Выберите корректный объект для перемещения.')
+        return value
+
+    def get_target(self):
+        object_type, object_id = self.cleaned_data['moving_object'].split(':', 1)
+        model = Train if object_type == 'train' else Wagon
+        return model.objects.get(pk=object_id)

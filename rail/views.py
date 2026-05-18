@@ -179,15 +179,11 @@ def track_map(request):
     if request.method == 'POST':
         form = MoveForm(request.POST)
         if form.is_valid():
-            target = form.cleaned_data['train'] if form.cleaned_data['target_type'] == 'train' else form.cleaned_data['wagon']
-            if not target:
-                messages.error(request, 'Выберите объект для перемещения')
-            else:
-                try:
-                    move_object(user=request.user, target=target, section=form.cleaned_data['section'], comment=form.cleaned_data['comment'])
-                    messages.success(request, 'Перемещение сохранено')
-                except ValueError as exc:
-                    messages.error(request, str(exc))
+            try:
+                move_object(user=request.user, target=form.get_target(), section=form.cleaned_data['section'], comment=form.cleaned_data['comment'])
+                messages.success(request, 'Перемещение сохранено')
+            except ValueError as exc:
+                messages.error(request, str(exc))
             return redirect('track_map')
     else:
         form = MoveForm()
@@ -196,16 +192,26 @@ def track_map(request):
 
 @role_required(Role.ADMIN, Role.DISPATCHER)
 @require_POST
-def track_map_drag_wagon(request):
-    wagon = get_object_or_404(Wagon, pk=request.POST.get('wagon_id'))
+def track_map_drag_object(request):
+    object_type = request.POST.get('object_type')
     section = get_object_or_404(TrackSection, pk=request.POST.get('section_id'))
-    if wagon.current_section_id == section.id:
-        return JsonResponse({'ok': True, 'message': 'Вагон уже находится на этом участке'})
+    if object_type == 'train':
+        target = get_object_or_404(Train, pk=request.POST.get('object_id'))
+        label = f'Состав {target.train_number}'
+        comment = 'Перемещение состава мышкой на схеме путей'
+    elif object_type == 'wagon':
+        target = get_object_or_404(Wagon, pk=request.POST.get('object_id'))
+        label = f'Вагон {target.wagon_number}'
+        comment = 'Перемещение вагона мышкой на схеме путей'
+    else:
+        return JsonResponse({'ok': False, 'message': 'Не удалось определить объект для перемещения'}, status=400)
+    if target.current_section_id == section.id:
+        return JsonResponse({'ok': True, 'message': f'{label} уже находится на этом участке'})
     try:
-        move_object(user=request.user, target=wagon, section=section, comment='Перемещение вагона мышкой на схеме путей')
+        move_object(user=request.user, target=target, section=section, comment=comment)
     except ValueError as exc:
         return JsonResponse({'ok': False, 'message': str(exc)}, status=400)
-    return JsonResponse({'ok': True, 'message': f'Вагон {wagon.wagon_number} перемещен на участок {section}'})
+    return JsonResponse({'ok': True, 'message': f'{label} перемещен на участок {section}'})
 
 
 @login_required

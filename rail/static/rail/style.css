@@ -757,3 +757,34 @@ select:hover,
 }
 .drag-message.error { border-color: #fecaca; background: #fef2f2; color: #991b1b; }
 .drag-message.success { border-color: #bbf7d0; background: #f0fdf4; color: #166534; }
+
+/* Unified movement form and drag-and-drop affordances for trains and wagons. */
+.map-toolbar .form-card p:first-of-type select {
+  font-weight: 700;
+}
+
+.draggable-object {
+  user-select: none;
+}
+
+.train.draggable-object,
+.wagon.draggable-object {
+  cursor: grab;
+}
+
+.draggable-object.dragging {
+  opacity: 0.55;
+  cursor: grabbing;
+}
+
+.section.drop-target::after {
+  content: "Отпустите здесь";
+  display: block;
+  margin-top: 8px;
+  padding: 6px 8px;
+  border-radius: 10px;
+  color: #1d4ed8;
+  background: #dbeafe;
+  font-size: 12px;
+  font-weight: 700;
+}
