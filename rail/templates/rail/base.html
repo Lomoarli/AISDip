@@ -1,5 +1,33 @@
 {% load static %}
-<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>АИС учета вагонов</title><link rel="stylesheet" href="{% static 'rail/style.css' %}"></head><body>
-<header class="topbar"><strong>АИС учета железнодорожных вагонов и составов</strong>{% if user.is_authenticated %}<nav><a href="/dashboard/">Панель</a><a href="/trains/">Составы</a><a href="/wagons/">Вагоны</a><a href="/tracks/">Пути</a><a href="/track-map/">Схема</a><a href="/documents/">Документы</a><a href="/reports/">Отчеты</a><a href="/notifications/">Уведомления</a><a href="/admin-panel/">Админ</a><form action="/logout/" method="post" style="display:inline">{% csrf_token %}<button class="secondary">Выход</button></form></nav>{% endif %}</header>
-<main class="container">{% if messages %}<div class="messages">{% for message in messages %}<div>{{ message }}</div>{% endfor %}</div>{% endif %}{% block content %}{% endblock %}</main>
-</body></html>
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>АИС учета вагонов</title>
+  <link rel="stylesheet" href="{% static 'rail/style.css' %}">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand"><span class="brand-mark">🚆</span><span>АИС учета вагонов и составов</span></div>
+  {% if user.is_authenticated %}
+  <nav class="nav">
+    <a href="/dashboard/">Панель</a>
+    <a href="/trains/">Составы</a>
+    <a href="/wagons/">Вагоны</a>
+    <a href="/tracks/">Пути</a>
+    <a href="/track-map/">Схема</a>
+    <a href="/documents/">Документы</a>
+    <a href="/reports/">Отчеты</a>
+    <a href="/notifications/">Уведомления</a>
+    <a href="/admin-panel/">Админ</a>
+    <form action="/logout/" method="post" style="display:inline">{% csrf_token %}<button class="secondary">Выход</button></form>
+  </nav>
+  {% endif %}
+</header>
+<main class="container">
+  {% if messages %}<div class="messages">{% for message in messages %}<div>{{ message }}</div>{% endfor %}</div>{% endif %}
+  {% block content %}{% endblock %}
+</main>
+</body>
+</html>

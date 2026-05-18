@@ -12,7 +12,7 @@ from django.utils import timezone
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.generic import CreateView, DetailView, ListView, UpdateView
 
-from .forms import DocumentForm, MoveForm, OCRConfirmForm, TrainForm, WagonForm
+from .forms import DocumentForm, MoveForm, OCRConfirmForm, RussianLoginForm, TrainForm, WagonForm
 from .models import Document, MovementHistory, Notification, OperationLog, RailwayTrack, Role, TrackSection, Train, Wagon
 from .services import confirm_ocr, log_action, move_object, notify, refresh_section_occupancy, run_ocr
 
@@ -29,6 +29,7 @@ def role_required(*roles):
 
 class LoginView(auth_views.LoginView):
     template_name = 'rail/login.html'
+    authentication_form = RussianLoginForm
 
     def form_valid(self, form):
         response = super().form_valid(form)
@@ -242,7 +243,11 @@ def reports(request):
     trains = Train.objects.all()
     wagons = Wagon.objects.all()
     movements = MovementHistory.objects.select_related('train', 'wagon', 'to_track', 'to_section')[:50]
-    wagon_statuses = wagons.values('status').annotate(total=Count('id'))
+    status_labels = dict(Wagon.STATUS_CHOICES)
+    wagon_statuses = [
+        {'status': status_labels.get(row['status'], row['status']), 'total': row['total']}
+        for row in wagons.values('status').annotate(total=Count('id'))
+    ]
     if request.GET.get('export') == 'csv':
         response = HttpResponse(content_type='text/csv; charset=utf-8')
         response['Content-Disposition'] = 'attachment; filename="rail_report.csv"'
