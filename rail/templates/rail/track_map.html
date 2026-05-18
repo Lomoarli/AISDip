@@ -1,1 +1,94 @@
-{% extends 'rail/base.html' %}{% block content %}<h1>Визуальная схема путей</h1><div class="grid"><div class="card"><h2>Переместить объект</h2><form method="post" class="form-card">{% csrf_token %}{{ form.as_p }}<button>Разместить / переместить</button></form></div><div class="card"><h2>Легенда</h2><p><span class="badge">Свободно</span> участок доступен</p><p><span class="badge" style="background:#fff1f0">Занято</span> участок занят составом или вагоном</p></div></div>{% for track in tracks %}<div class="track"><h2>{{ track }}</h2><div class="rail"></div><div class="sections">{% for section in track.sections.all %}<div class="section {% if section.is_occupied %}occupied{% endif %}"><b>{{ section.name }}</b><br><small>{{ section.position_start }}–{{ section.position_end }} м</small>{% for train in trains %}{% if train.current_section_id == section.id %}<div class="train"><a href="/trains/{{ train.id }}/">🚆 {{ train.train_number }}</a></div>{% endif %}{% endfor %}{% for wagon in wagons %}{% if wagon.current_section_id == section.id %}<span class="wagon"><a href="/wagons/{{ wagon.id }}/">{{ wagon.wagon_number }}</a></span>{% endif %}{% endfor %}</div>{% endfor %}</div></div>{% endfor %}{% endblock %}
+{% extends 'rail/base.html' %}
+{% block content %}
+<h1>Визуальная схема путей</h1>
+<div class="grid map-toolbar">
+  <div class="card">
+    <h2>Переместить объект</h2>
+    <p class="muted">Вагоны можно перетаскивать мышкой между свободными участками. Для составов оставлена обычная форма.</p>
+    <form method="post" class="form-card">{% csrf_token %}{{ form.as_p }}<button>Разместить / переместить</button></form>
+  </div>
+  <div class="card">
+    <h2>Легенда</h2>
+    <p><span class="badge">Свободно</span> участок доступен для перемещения</p>
+    <p><span class="badge badge-danger">Занято</span> участок занят составом или вагоном</p>
+    <p class="muted">Если бросить вагон на занятый участок, система покажет сообщение и не выполнит перемещение.</p>
+  </div>
+</div>
+
+<div id="drag-message" class="drag-message" hidden></div>
+
+{% for track in tracks %}
+  <div class="track">
+    <h2>{{ track }}</h2>
+    <div class="rail"></div>
+    <div class="sections">
+      {% for section in track.sections.all %}
+        <div class="section {% if section.is_occupied %}occupied{% endif %}" data-section-id="{{ section.id }}">
+          <div class="section-head">
+            <b>{{ section.name }}</b>
+            <small>{{ section.position_start }}–{{ section.position_end }} м</small>
+          </div>
+          {% for train in trains %}
+            {% if train.current_section_id == section.id %}
+              <div class="train"><a href="/trains/{{ train.id }}/">🚆 {{ train.train_number }}</a></div>
+            {% endif %}
+          {% endfor %}
+          {% for wagon in wagons %}
+            {% if wagon.current_section_id == section.id %}
+              <span class="wagon draggable-wagon" draggable="true" data-wagon-id="{{ wagon.id }}" title="Перетащите вагон на свободный участок">
+                <a href="/wagons/{{ wagon.id }}/">{{ wagon.wagon_number }}</a>
+              </span>
+            {% endif %}
+          {% endfor %}
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+{% endfor %}
+
+<script>
+(function () {
+  const message = document.getElementById('drag-message');
+  const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+  function showMessage(text, isError) {
+    message.hidden = false;
+    message.textContent = text;
+    message.className = 'drag-message ' + (isError ? 'error' : 'success');
+    window.setTimeout(() => { message.hidden = true; }, 3500);
+  }
+
+  document.querySelectorAll('.draggable-wagon').forEach((wagon) => {
+    wagon.addEventListener('dragstart', (event) => {
+      event.dataTransfer.setData('text/plain', wagon.dataset.wagonId);
+      wagon.classList.add('dragging');
+    });
+    wagon.addEventListener('dragend', () => wagon.classList.remove('dragging'));
+  });
+
+  document.querySelectorAll('.section').forEach((section) => {
+    section.addEventListener('dragover', (event) => {
+      event.preventDefault();
+      section.classList.add('drop-target');
+    });
+    section.addEventListener('dragleave', () => section.classList.remove('drop-target'));
+    section.addEventListener('drop', async (event) => {
+      event.preventDefault();
+      section.classList.remove('drop-target');
+      const wagonId = event.dataTransfer.getData('text/plain');
+      if (!wagonId) return;
+
+      const body = new URLSearchParams({ wagon_id: wagonId, section_id: section.dataset.sectionId });
+      const response = await fetch('{% url "track_map_drag_wagon" %}', {
+        method: 'POST',
+        headers: { 'X-CSRFToken': csrfToken, 'X-Requested-With': 'XMLHttpRequest' },
+        body
+      });
+      const data = await response.json();
+      showMessage(data.message, !data.ok);
+      if (data.ok) window.setTimeout(() => window.location.reload(), 450);
+    });
+  });
+})();
+</script>
+{% endblock %}

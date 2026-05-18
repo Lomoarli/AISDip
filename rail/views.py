@@ -5,11 +5,12 @@ from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.core.paginator import Paginator
 from django.db.models import Count, Q
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
 from django.utils import timezone
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.views.decorators.http import require_POST
 from django.views.generic import CreateView, DetailView, ListView, UpdateView
 
 from .forms import DocumentForm, MoveForm, OCRConfirmForm, RussianLoginForm, TrainForm, WagonForm
@@ -191,6 +192,20 @@ def track_map(request):
     else:
         form = MoveForm()
     return render(request, 'rail/track_map.html', {'tracks': RailwayTrack.objects.prefetch_related('sections'), 'trains': Train.objects.exclude(status=Train.DEPARTED), 'wagons': Wagon.objects.exclude(status='departed'), 'form': form})
+
+
+@role_required(Role.ADMIN, Role.DISPATCHER)
+@require_POST
+def track_map_drag_wagon(request):
+    wagon = get_object_or_404(Wagon, pk=request.POST.get('wagon_id'))
+    section = get_object_or_404(TrackSection, pk=request.POST.get('section_id'))
+    if wagon.current_section_id == section.id:
+        return JsonResponse({'ok': True, 'message': 'Вагон уже находится на этом участке'})
+    try:
+        move_object(user=request.user, target=wagon, section=section, comment='Перемещение вагона мышкой на схеме путей')
+    except ValueError as exc:
+        return JsonResponse({'ok': False, 'message': str(exc)}, status=400)
+    return JsonResponse({'ok': True, 'message': f'Вагон {wagon.wagon_number} перемещен на участок {section}'})
 
 
 @login_required

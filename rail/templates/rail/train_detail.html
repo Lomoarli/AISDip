@@ -1,1 +1,30 @@
-{% extends 'rail/base.html' %}{% block content %}<div class="card"><h1>Состав {{ object.train_number }}</h1><p><b>Статус:</b> {{ object.get_status_display }} | <b>Груз:</b> {{ object.cargo_type }} | <b>Место:</b> {{ object.current_section|default:'не размещен' }}</p><p>{{ object.comment }}</p><a class="btn" href="/trains/{{ object.id }}/edit/">Редактировать</a> <a class="btn danger" href="/trains/{{ object.id }}/depart/" onclick="return confirm('Отметить состав отправленным?')">Отправлен</a> <a class="btn" href="/wagons/create/">Добавить вагон</a></div><h2>Вагоны состава</h2><table><tr><th>Номер</th><th>Статус</th><th>Груз</th><th>Место</th></tr>{% for wagon in object.wagons.all %}<tr><td><a href="/wagons/{{ wagon.id }}/">{{ wagon.wagon_number }}</a></td><td>{{ wagon.get_status_display }}</td><td>{{ wagon.cargo_type }}</td><td>{{ wagon.current_section|default:'-' }}</td></tr>{% empty %}<tr><td colspan="4">Вагонов нет</td></tr>{% endfor %}</table>{% endblock %}
+{% extends 'rail/base.html' %}
+{% block content %}
+<div class="card">
+  <h1>Состав {{ object.train_number }}</h1>
+  <p><b>Статус:</b> {{ object.get_status_display }} | <b>Груз:</b> {{ object.cargo_type }} | <b>Место:</b> {{ object.current_section|default:'не размещен' }}</p>
+  <p>{{ object.comment }}</p>
+  <div class="actions">
+    <a class="btn" href="/trains/{{ object.id }}/edit/">Редактировать</a>
+    {% if object.status != 'departed' %}
+      <a class="btn danger" href="/trains/{{ object.id }}/depart/" onclick="return confirm('Отметить состав отправленным?')">Отправить</a>
+    {% endif %}
+    <a class="btn" href="/wagons/create/">Добавить вагон</a>
+  </div>
+</div>
+
+<h2>Вагоны состава</h2>
+<table>
+  <tr><th>Номер</th><th>Статус</th><th>Груз</th><th>Место</th></tr>
+  {% for wagon in object.wagons.all %}
+    <tr>
+      <td><a href="/wagons/{{ wagon.id }}/">{{ wagon.wagon_number }}</a></td>
+      <td>{{ wagon.get_status_display }}</td>
+      <td>{{ wagon.cargo_type }}</td>
+      <td>{{ wagon.current_section|default:'-' }}</td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="4">Вагонов нет</td></tr>
+  {% endfor %}
+</table>
+{% endblock %}
