@@ -1,0 +1,1 @@
+{% extends 'rail/base.html' %}{% block content %}<div class="card"><h1>{{ title|default:'Форма' }}</h1><form method="post" enctype="multipart/form-data" class="form-card">{% csrf_token %}{{ form.as_p }}<button>Сохранить</button> <a class="btn secondary" href="javascript:history.back()">Назад</a></form></div>{% endblock %}
