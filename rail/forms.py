@@ -16,6 +16,9 @@ CONTROL_LABELS = {
     'wagon_number': 'Номер вагона',
     'train': 'Состав',
     'cargo_description': 'Описание груза',
+    'cargo_quantity': 'Количество груза',
+    'cargo_unit': 'Единица измерения',
+    'wagon_count': 'Количество вагонов',
     'file': 'Файл документа',
     'document_type': 'Тип документа',
     'wagon_count': 'Количество вагонов',
@@ -84,7 +87,7 @@ class RussianLoginForm(StyledFormMixin, AuthenticationForm):
 class TrainForm(StyledFormMixin, forms.ModelForm):
     class Meta:
         model = Train
-        fields = ['train_number', 'arrival_datetime', 'departure_datetime', 'status', 'cargo_type', 'current_track', 'current_section', 'comment']
+        fields = ['train_number', 'arrival_datetime', 'departure_datetime', 'wagon_count', 'status', 'cargo_type', 'current_track', 'current_section', 'comment']
         widgets = {'arrival_datetime': forms.DateTimeInput(attrs={'type': 'datetime-local'}), 'departure_datetime': forms.DateTimeInput(attrs={'type': 'datetime-local'})}
 
     def __init__(self, *args, **kwargs):
@@ -95,7 +98,7 @@ class TrainForm(StyledFormMixin, forms.ModelForm):
 class WagonForm(StyledFormMixin, forms.ModelForm):
     class Meta:
         model = Wagon
-        fields = ['wagon_number', 'train', 'cargo_type', 'cargo_description', 'status', 'current_track', 'current_section', 'arrival_datetime', 'departure_datetime', 'comment']
+        fields = ['wagon_number', 'train', 'cargo_type', 'cargo_quantity', 'cargo_unit', 'cargo_description', 'status', 'current_track', 'current_section', 'arrival_datetime', 'departure_datetime', 'comment']
         widgets = {'arrival_datetime': forms.DateTimeInput(attrs={'type': 'datetime-local'}), 'departure_datetime': forms.DateTimeInput(attrs={'type': 'datetime-local'})}
 
     def __init__(self, *args, **kwargs):

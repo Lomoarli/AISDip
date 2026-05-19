@@ -1,1 +1,53 @@
-{% extends 'rail/base.html' %}{% block content %}<h1>Отчеты</h1><p><a class="btn" href="?export=csv">Экспорт CSV для РЖД</a></p><div class="grid"><div class="card"><h2>Статусы вагонов</h2><table><tr><th>Статус</th><th>Количество</th></tr>{% for row in wagon_statuses %}<tr><td>{{ row.status }}</td><td>{{ row.total }}</td></tr>{% endfor %}</table></div><div class="card"><h2>Последние перемещения</h2><table><tr><th>Дата</th><th>Объект</th><th>Куда</th></tr>{% for m in movements %}<tr><td>{{ m.moved_at }}</td><td>{{ m.train|default:m.wagon }}</td><td>{{ m.to_section }}</td></tr>{% endfor %}</table></div></div><h2>Составы</h2><table><tr><th>Номер</th><th>Статус</th><th>Путь</th></tr>{% for train in trains %}<tr><td>{{ train.train_number }}</td><td>{{ train.get_status_display }}</td><td>{{ train.current_section|default:'-' }}</td></tr>{% endfor %}</table><h2>Вагоны</h2><table><tr><th>Номер</th><th>Статус</th><th>Путь</th></tr>{% for wagon in wagons %}<tr><td>{{ wagon.wagon_number }}</td><td>{{ wagon.get_status_display }}</td><td>{{ wagon.current_section|default:'-' }}</td></tr>{% endfor %}</table>{% endblock %}
+{% extends 'rail/base.html' %}
+{% block content %}
+<h1>Отчеты</h1>
+<form class="filters" method="get">
+  <input type="date" name="date_from" value="{{ filters.date_from }}">
+  <input type="date" name="date_to" value="{{ filters.date_to }}">
+  <select name="status">
+    <option value="">Все статусы вагонов</option>
+    {% for code, label in status_choices %}
+      <option value="{{ code }}" {% if filters.status == code %}selected{% endif %}>{{ label }}</option>
+    {% endfor %}
+  </select>
+  <select name="track">
+    <option value="">Все пути</option>
+    {% for t in tracks %}
+      <option value="{{ t.id }}" {% if filters.track == t.id|stringformat:'s' %}selected{% endif %}>{{ t }}</option>
+    {% endfor %}
+  </select>
+  <button>Применить</button>
+  <a class="btn secondary" href="/reports/">Сброс</a>
+  <a class="btn" href="?export=csv&date_from={{ filters.date_from }}&date_to={{ filters.date_to }}&status={{ filters.status }}&track={{ filters.track }}">Экспорт CSV</a>
+</form>
+
+<div class="grid">
+  <div class="card">
+    <h2>Отчет о размещении составов на путях</h2>
+    <table><tr><th>Состав</th><th>Место</th><th>Статус</th></tr>
+      {% for train in placement_report %}<tr><td>{{ train.train_number }}</td><td>{{ train.current_section }}</td><td>{{ train.get_status_display }}</td></tr>{% empty %}<tr><td colspan="3">Нет данных</td></tr>{% endfor %}
+    </table>
+  </div>
+  <div class="card">
+    <h2>Суточный отчет (сегодня)</h2>
+    <table><tr><th>Состав</th><th>Прибыл</th><th>Груз</th></tr>
+      {% for train in daily_report %}<tr><td>{{ train.train_number }}</td><td>{{ train.arrival_datetime }}</td><td>{{ train.cargo_type }}</td></tr>{% empty %}<tr><td colspan="3">Нет данных</td></tr>{% endfor %}
+    </table>
+  </div>
+</div>
+
+<div class="grid">
+  <div class="card"><h2>Отчет по статусам вагонов</h2><table><tr><th>Статус</th><th>Количество</th></tr>{% for row in wagon_statuses %}<tr><td>{{ row.status }}</td><td>{{ row.total }}</td></tr>{% endfor %}</table></div>
+  <div class="card"><h2>Отчет по перемещениям</h2><table><tr><th>Дата</th><th>Объект</th><th>Куда</th></tr>{% for m in movements %}<tr><td>{{ m.moved_at }}</td><td>{{ m.train|default:m.wagon }}</td><td>{{ m.to_section }}</td></tr>{% empty %}<tr><td colspan="3">Нет данных</td></tr>{% endfor %}</table></div>
+</div>
+
+<div class="card">
+  <h2>Отчет по обработке документов</h2>
+  <table><tr><th>Документ</th><th>Состав</th><th>Статус OCR</th><th>Дата</th></tr>
+    {% for doc in documents_report %}<tr><td>#{{ doc.id }}</td><td>{{ doc.train.train_number }}</td><td>{{ doc.get_ocr_status_display }}</td><td>{{ doc.uploaded_at }}</td></tr>{% empty %}<tr><td colspan="4">Нет неподтвержденных документов</td></tr>{% endfor %}
+  </table>
+</div>
+
+<h2>Отчет для РЖД (сводно)</h2>
+<table><tr><th>Состав</th><th>Статус</th><th>Путь</th></tr>{% for train in trains %}<tr><td>{{ train.train_number }}</td><td>{{ train.get_status_display }}</td><td>{{ train.current_section|default:'-' }}</td></tr>{% endfor %}</table>
+{% endblock %}

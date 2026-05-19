@@ -263,12 +263,39 @@ def document_ocr(request, pk):
 def reports(request):
     trains = Train.objects.all()
     wagons = Wagon.objects.all()
-    movements = MovementHistory.objects.select_related('train', 'wagon', 'to_track', 'to_section')[:50]
+    movements = MovementHistory.objects.select_related('train', 'wagon', 'to_track', 'to_section')
+
+    date_from = request.GET.get('date_from')
+    date_to = request.GET.get('date_to')
+    status = request.GET.get('status')
+    track = request.GET.get('track')
+
+    if date_from:
+        trains = trains.filter(arrival_datetime__date__gte=date_from)
+        wagons = wagons.filter(arrival_datetime__date__gte=date_from)
+        movements = movements.filter(moved_at__date__gte=date_from)
+    if date_to:
+        trains = trains.filter(arrival_datetime__date__lte=date_to)
+        wagons = wagons.filter(arrival_datetime__date__lte=date_to)
+        movements = movements.filter(moved_at__date__lte=date_to)
+    if status:
+        wagons = wagons.filter(status=status)
+    if track:
+        trains = trains.filter(current_track_id=track)
+        wagons = wagons.filter(current_track_id=track)
+        movements = movements.filter(to_track_id=track)
+
+    movements = movements[:50]
     status_labels = dict(Wagon.STATUS_CHOICES)
     wagon_statuses = [
         {'status': status_labels.get(row['status'], row['status']), 'total': row['total']}
         for row in wagons.values('status').annotate(total=Count('id'))
     ]
+
+    placement_report = trains.exclude(current_section__isnull=True)
+    daily_report = trains.filter(arrival_datetime__date=timezone.localdate())
+    documents_report = Document.objects.filter(train__in=trains).exclude(ocr_status='confirmed')
+
     if request.GET.get('export') == 'csv':
         response = HttpResponse(content_type='text/csv; charset=utf-8')
         response['Content-Disposition'] = 'attachment; filename="rail_report.csv"'
@@ -280,7 +307,12 @@ def reports(request):
             writer.writerow(['Вагон', wagon.wagon_number, wagon.get_status_display(), wagon.current_track or '', wagon.current_section or ''])
         log_action(request.user, 'Формирование отчета', description='Экспорт CSV')
         return response
-    return render(request, 'rail/reports.html', {'trains': trains[:20], 'wagons': wagons[:20], 'movements': movements, 'wagon_statuses': wagon_statuses})
+    return render(request, 'rail/reports.html', {
+        'trains': trains[:20], 'wagons': wagons[:20], 'movements': movements, 'wagon_statuses': wagon_statuses,
+        'placement_report': placement_report[:20], 'daily_report': daily_report[:20], 'documents_report': documents_report[:20],
+        'tracks': RailwayTrack.objects.all(), 'status_choices': Wagon.STATUS_CHOICES,
+        'filters': {'date_from': date_from or '', 'date_to': date_to or '', 'status': status or '', 'track': track or ''},
+    })
 
 
 @login_required

@@ -67,6 +67,7 @@ class Train(models.Model):
     arrival_datetime = models.DateTimeField('Дата прибытия', default=timezone.now)
     departure_datetime = models.DateTimeField('Дата отправления', null=True, blank=True)
     status = models.CharField('Статус', max_length=32, choices=STATUS_CHOICES, default=ARRIVED)
+    wagon_count = models.PositiveIntegerField('Количество вагонов (по документу/плану)', default=0)
     cargo_type = models.CharField('Тип груза', max_length=120, blank=True)
     current_track = models.ForeignKey(RailwayTrack, on_delete=models.SET_NULL, null=True, blank=True)
     current_section = models.ForeignKey(TrackSection, on_delete=models.SET_NULL, null=True, blank=True)
@@ -84,11 +85,13 @@ class Train(models.Model):
 
 
 class Wagon(models.Model):
-    STATUS_CHOICES = [('loaded', 'Груженый'), ('unloaded', 'Порожний'), ('waiting_unload', 'Ожидает выгрузки'), ('unloading', 'Выгружается'), ('maintenance', 'Ремонт'), ('ready_to_depart', 'Готов к отправлению'), ('departed', 'Отправлен')]
+    STATUS_CHOICES = [('arrived', 'Прибыл'), ('waiting_unload', 'Ожидает разгрузки'), ('unloading', 'На разгрузке'), ('unloaded', 'Разгружен'), ('loaded', 'Загружен'), ('maintenance', 'На обслуживании'), ('ready_to_depart', 'Готов к отправке'), ('departed', 'Отправлен')]
     wagon_number = models.CharField('Номер вагона', max_length=40, unique=True)
     train = models.ForeignKey(Train, on_delete=models.CASCADE, related_name='wagons')
     cargo_type = models.CharField('Тип груза', max_length=120, blank=True)
     cargo_description = models.TextField('Описание груза', blank=True)
+    cargo_quantity = models.DecimalField('Количество груза', max_digits=12, decimal_places=3, null=True, blank=True)
+    cargo_unit = models.CharField('Единица измерения', max_length=16, blank=True, default='т')
     status = models.CharField('Статус', max_length=32, choices=STATUS_CHOICES, default='waiting_unload')
     current_track = models.ForeignKey(RailwayTrack, on_delete=models.SET_NULL, null=True, blank=True)
     current_section = models.ForeignKey(TrackSection, on_delete=models.SET_NULL, null=True, blank=True)
