@@ -339,8 +339,9 @@ def reports(request):
     documents_report = Document.objects.filter(train__in=trains).exclude(ocr_status='confirmed')
 
     if request.GET.get('export') == 'csv':
-        response = HttpResponse(content_type='text/csv; charset=utf-8')
+        response = HttpResponse(content_type='text/csv; charset=utf-8-sig')
         response['Content-Disposition'] = 'attachment; filename="rail_report.csv"'
+        response.write('﻿')
         writer = csv.writer(response)
         writer.writerow(['Тип', 'Номер', 'Статус', 'Путь', 'Участок'])
         for train in trains:
