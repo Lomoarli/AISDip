@@ -9,9 +9,9 @@
   </div>
   <div class="card">
     <h2>Перемещение мышкой</h2>
-    <p><span class="badge">Свободно</span> сюда можно перетащить состав или вагон</p>
+    <p><span class="badge">Свободно</span> сюда можно перетащить состав</p>
     <p><span class="badge badge-danger">Занято</span> система не даст разместить объект</p>
-    <p class="muted">Перетащите карточку состава или вагона на нужный участок схемы.</p>
+    <p class="muted">Перетащите карточку состава на нужный участок схемы.</p>
   </div>
 </div>
 
@@ -37,7 +37,7 @@
           {% endfor %}
           {% for wagon in wagons %}
             {% if wagon.current_section_id == section.id %}
-              <span class="wagon draggable-object" draggable="true" data-object-type="wagon" data-object-id="{{ wagon.id }}" title="Перетащите вагон на свободный участок">
+              <span class="wagon">
                 <a href="/wagons/{{ wagon.id }}/">{{ wagon.wagon_number }}</a>
               </span>
             {% endif %}

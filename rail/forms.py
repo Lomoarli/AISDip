@@ -81,17 +81,29 @@ class RussianLoginForm(StyledFormMixin, AuthenticationForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields['arrival_datetime'].input_formats = ['%Y-%m-%dT%H:%M', '%Y-%m-%d %H:%M:%S', '%Y-%m-%d %H:%M']
+        self.fields['departure_datetime'].input_formats = ['%Y-%m-%dT%H:%M', '%Y-%m-%d %H:%M:%S', '%Y-%m-%d %H:%M']
         self.apply_design_classes()
+
+    def clean(self):
+        cleaned = super().clean()
+        section = cleaned.get('current_section')
+        train = self.instance
+        if section and section.is_occupied and (not train.pk or train.current_section_id != section.id):
+            self.add_error('current_section', 'Выбранный участок уже занят. Выберите свободный участок.')
+        return cleaned
 
 
 class TrainForm(StyledFormMixin, forms.ModelForm):
     class Meta:
         model = Train
         fields = ['train_number', 'arrival_datetime', 'departure_datetime', 'wagon_count', 'status', 'cargo_type', 'current_track', 'current_section', 'comment']
-        widgets = {'arrival_datetime': forms.DateTimeInput(attrs={'type': 'datetime-local'}), 'departure_datetime': forms.DateTimeInput(attrs={'type': 'datetime-local'})}
+        widgets = {'arrival_datetime': forms.DateTimeInput(format='%Y-%m-%dT%H:%M', attrs={'type': 'datetime-local'}), 'departure_datetime': forms.DateTimeInput(format='%Y-%m-%dT%H:%M', attrs={'type': 'datetime-local'})}
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields['arrival_datetime'].input_formats = ['%Y-%m-%dT%H:%M', '%Y-%m-%d %H:%M:%S', '%Y-%m-%d %H:%M']
+        self.fields['departure_datetime'].input_formats = ['%Y-%m-%dT%H:%M', '%Y-%m-%d %H:%M:%S', '%Y-%m-%d %H:%M']
         self.apply_design_classes()
 
 
@@ -99,7 +111,7 @@ class WagonForm(StyledFormMixin, forms.ModelForm):
     class Meta:
         model = Wagon
         fields = ['wagon_number', 'train', 'cargo_type', 'cargo_quantity', 'cargo_unit', 'cargo_description', 'status', 'current_track', 'current_section', 'arrival_datetime', 'departure_datetime', 'comment']
-        widgets = {'arrival_datetime': forms.DateTimeInput(attrs={'type': 'datetime-local'}), 'departure_datetime': forms.DateTimeInput(attrs={'type': 'datetime-local'})}
+        widgets = {'arrival_datetime': forms.DateTimeInput(format='%Y-%m-%dT%H:%M', attrs={'type': 'datetime-local'}), 'departure_datetime': forms.DateTimeInput(format='%Y-%m-%dT%H:%M', attrs={'type': 'datetime-local'})}
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

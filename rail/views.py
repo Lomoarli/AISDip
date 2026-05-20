@@ -29,6 +29,38 @@ def role_required(*roles):
     return user_passes_test(check, login_url='/login/')
 
 
+def _sync_train_wagons(train):
+    existing = {w.wagon_number: w for w in train.wagons.all()}
+    for idx in range(1, train.wagon_count + 1):
+        number = f'{train.train_number}-{idx}'
+        wagon = existing.pop(number, None)
+        if wagon is None:
+            Wagon.objects.create(
+                wagon_number=number,
+                train=train,
+                cargo_type=train.cargo_type,
+                cargo_description=f'Автосоздан для состава {train.train_number}',
+                status='arrived',
+                current_track=train.current_track,
+                current_section=train.current_section,
+                arrival_datetime=train.arrival_datetime,
+                departure_datetime=train.departure_datetime,
+            )
+        else:
+            wagon.train = train
+            wagon.cargo_type = train.cargo_type
+            wagon.current_track = train.current_track
+            wagon.current_section = train.current_section
+            wagon.arrival_datetime = train.arrival_datetime
+            wagon.departure_datetime = train.departure_datetime
+            wagon.save()
+    for wagon in existing.values():
+        wagon.train = train
+        wagon.status = 'departed'
+        wagon.departure_datetime = train.departure_datetime or timezone.now()
+        wagon.save()
+
+
 class LoginView(auth_views.LoginView):
     template_name = 'rail/login.html'
     authentication_form = RussianLoginForm
@@ -98,6 +130,7 @@ class TrainCreate(LoginRequiredMixin, CreateView):
         form.instance.created_by = self.request.user
         response = super().form_valid(form)
         log_action(self.request.user, 'Создание состава', self.object, f'Создан состав {self.object.train_number}')
+        _sync_train_wagons(self.object)
         if not self.object.current_section:
             notify(self.request.user, 'Состав не размещен', f'Состав {self.object.train_number} ожидает размещения', 'warning')
         return response
@@ -120,6 +153,7 @@ class TrainUpdate(LoginRequiredMixin, UpdateView):
 
     def form_valid(self, form):
         response = super().form_valid(form)
+        _sync_train_wagons(self.object)
         log_action(self.request.user, 'Изменение состава', self.object, f'Изменен состав {self.object.train_number}')
         return response
 
@@ -208,12 +242,8 @@ def track_map_drag_object(request):
         target = get_object_or_404(Train, pk=request.POST.get('object_id'))
         label = f'Состав {target.train_number}'
         comment = 'Перемещение состава мышкой на схеме путей'
-    elif object_type == 'wagon':
-        target = get_object_or_404(Wagon, pk=request.POST.get('object_id'))
-        label = f'Вагон {target.wagon_number}'
-        comment = 'Перемещение вагона мышкой на схеме путей'
     else:
-        return JsonResponse({'ok': False, 'message': 'Не удалось определить объект для перемещения'}, status=400)
+        return JsonResponse({'ok': False, 'message': 'На схеме допускается перемещение только составов'}, status=400)
     if target.current_section_id == section.id:
         return JsonResponse({'ok': True, 'message': f'{label} уже находится на этом участке'})
     try:
