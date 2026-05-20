@@ -108,7 +108,7 @@ class TrainForm(StyledFormMixin, forms.ModelForm):
 class WagonForm(StyledFormMixin, forms.ModelForm):
     class Meta:
         model = Wagon
-        fields = ['wagon_number', 'train', 'cargo_type', 'cargo_quantity', 'cargo_unit', 'cargo_description', 'status', 'current_track', 'current_section', 'arrival_datetime', 'departure_datetime', 'comment']
+        fields = ['wagon_number', 'train', 'cargo_type', 'cargo_quantity', 'cargo_unit', 'cargo_description', 'status', 'arrival_datetime', 'departure_datetime', 'comment']
         widgets = {'arrival_datetime': forms.DateTimeInput(format='%Y-%m-%dT%H:%M', attrs={'type': 'datetime-local'}), 'departure_datetime': forms.DateTimeInput(format='%Y-%m-%dT%H:%M', attrs={'type': 'datetime-local'})}
 
     def __init__(self, *args, **kwargs):
