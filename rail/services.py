@@ -1,5 +1,8 @@
 import re
 from datetime import datetime
+import os
+import platform
+import shutil
 
 import pytesseract
 from PIL import Image, ImageFilter, ImageOps
@@ -7,6 +10,42 @@ from django.utils import timezone
 
 from .models import MovementHistory, Notification, OCRResult, OperationLog, TrackSection, Train, Wagon
 
+def setup_tesseract():
+    system = platform.system()
+
+    if system == "Windows":
+        windows_paths = [
+            r"C:\Program Files\Tesseract-OCR\tesseract.exe",
+            r"C:\Program Files (x86)\Tesseract-OCR\tesseract.exe",
+        ]
+
+        for path in windows_paths:
+            if os.path.exists(path):
+                pytesseract.pytesseract.tesseract_cmd = path
+                return
+
+    found = shutil.which("tesseract")
+    if found:
+        pytesseract.pytesseract.tesseract_cmd = found
+        return
+
+    if system == "Darwin":
+        mac_paths = [
+            "/opt/homebrew/bin/tesseract",
+            "/usr/local/bin/tesseract",
+        ]
+
+        for path in mac_paths:
+            if os.path.exists(path):
+                pytesseract.pytesseract.tesseract_cmd = path
+                return
+
+    raise FileNotFoundError(
+        "Tesseract не найден. Проверьте, установлен ли он."
+    )
+
+
+setup_tesseract()
 
 def log_action(user, action, obj=None, description=''):
     return OperationLog.objects.create(user=user if getattr(user, 'is_authenticated', False) else None, action=action, object_type=obj.__class__.__name__ if obj else '', object_id=getattr(obj, 'id', None), description=description)
