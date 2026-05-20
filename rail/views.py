@@ -11,6 +11,7 @@ from django.urls import reverse_lazy
 from django.utils import timezone
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.views.decorators.http import require_POST
+from django.utils.decorators import method_decorator
 from django.views.generic import CreateView, DetailView, ListView, UpdateView
 
 from .forms import DocumentForm, MoveForm, OCRConfirmForm, RussianLoginForm, TrainForm, WagonForm
@@ -79,12 +80,14 @@ class FilteredListMixin:
         return data
 
 
+@method_decorator(role_required(Role.ADMIN, Role.OPERATOR, Role.DISPATCHER), name='dispatch')
 class TrainList(LoginRequiredMixin, FilteredListMixin, ListView):
     model = Train
     template_name = 'rail/train_list.html'
     search_fields = ['train_number', 'cargo_type']
 
 
+@method_decorator(role_required(Role.ADMIN, Role.OPERATOR), name='dispatch')
 class TrainCreate(LoginRequiredMixin, CreateView):
     model = Train
     form_class = TrainForm
@@ -100,11 +103,13 @@ class TrainCreate(LoginRequiredMixin, CreateView):
         return response
 
 
+@method_decorator(role_required(Role.ADMIN, Role.OPERATOR, Role.DISPATCHER), name='dispatch')
 class TrainDetail(LoginRequiredMixin, DetailView):
     model = Train
     template_name = 'rail/train_detail.html'
 
 
+@method_decorator(role_required(Role.ADMIN, Role.OPERATOR), name='dispatch')
 class TrainUpdate(LoginRequiredMixin, UpdateView):
     model = Train
     form_class = TrainForm
@@ -132,12 +137,14 @@ def depart_train(request, pk):
     return redirect('train_detail', pk=pk)
 
 
+@method_decorator(role_required(Role.ADMIN, Role.OPERATOR, Role.DISPATCHER), name='dispatch')
 class WagonList(LoginRequiredMixin, FilteredListMixin, ListView):
     model = Wagon
     template_name = 'rail/wagon_list.html'
     search_fields = ['wagon_number', 'cargo_type', 'cargo_description']
 
 
+@method_decorator(role_required(Role.ADMIN, Role.OPERATOR), name='dispatch')
 class WagonCreate(LoginRequiredMixin, CreateView):
     model = Wagon
     form_class = WagonForm
@@ -150,11 +157,13 @@ class WagonCreate(LoginRequiredMixin, CreateView):
         return response
 
 
+@method_decorator(role_required(Role.ADMIN, Role.OPERATOR, Role.DISPATCHER), name='dispatch')
 class WagonDetail(LoginRequiredMixin, DetailView):
     model = Wagon
     template_name = 'rail/wagon_detail.html'
 
 
+@method_decorator(role_required(Role.ADMIN, Role.OPERATOR), name='dispatch')
 class WagonUpdate(LoginRequiredMixin, UpdateView):
     model = Wagon
     form_class = WagonForm
@@ -169,7 +178,7 @@ class WagonUpdate(LoginRequiredMixin, UpdateView):
         return response
 
 
-@login_required
+@role_required(Role.ADMIN, Role.OPERATOR, Role.DISPATCHER)
 def tracks(request):
     return render(request, 'rail/tracks.html', {'tracks': RailwayTrack.objects.prefetch_related('sections')})
 
@@ -214,12 +223,12 @@ def track_map_drag_object(request):
     return JsonResponse({'ok': True, 'message': f'{label} перемещен на участок {section}'})
 
 
-@login_required
+@role_required(Role.ADMIN, Role.OPERATOR)
 def documents(request):
     return render(request, 'rail/documents.html', {'documents': Document.objects.select_related('train')})
 
 
-@login_required
+@role_required(Role.ADMIN, Role.OPERATOR)
 def upload_document(request):
     form = DocumentForm(request.POST or None, request.FILES or None)
     if form.is_valid():
@@ -232,7 +241,7 @@ def upload_document(request):
     return render(request, 'rail/form.html', {'form': form, 'title': 'Загрузка документа'})
 
 
-@login_required
+@role_required(Role.ADMIN, Role.OPERATOR)
 def document_ocr(request, pk):
     doc = get_object_or_404(Document, pk=pk)
     if request.method == 'POST' and 'run' in request.POST:
@@ -259,7 +268,7 @@ def document_ocr(request, pk):
     return render(request, 'rail/document_ocr.html', {'document': doc, 'form': form, 'result': result})
 
 
-@login_required
+@role_required(Role.ADMIN, Role.OPERATOR)
 def reports(request):
     trains = Train.objects.all()
     wagons = Wagon.objects.all()
