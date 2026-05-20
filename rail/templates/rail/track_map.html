@@ -4,7 +4,7 @@
 <div class="grid map-toolbar">
   <div class="card">
     <h2>Переместить объект</h2>
-    <p class="muted">Выберите один объект — состав или вагон — и новый участок. Лишних полей больше нет.</p>
+    <p class="muted">Выберите состав и новый участок для перемещения через форму.</p>
     <form method="post" class="form-card">{% csrf_token %}{{ form.as_p }}<button>Переместить</button></form>
   </div>
   <div class="card">

@@ -145,11 +145,8 @@ class MoveForm(StyledFormMixin, forms.Form):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         trains = Train.objects.exclude(status=Train.DEPARTED).order_by('train_number')
-        wagons = Wagon.objects.exclude(status='departed').select_related('train').order_by('wagon_number')
-        self.fields['moving_object'].choices = [('', 'Выберите состав или вагон')] + [
+        self.fields['moving_object'].choices = [('', 'Выберите состав')] + [
             (f'train:{train.id}', f'🚆 Состав {train.train_number}') for train in trains
-        ] + [
-            (f'wagon:{wagon.id}', f'▣ Вагон {wagon.wagon_number} — состав {wagon.train.train_number}') for wagon in wagons
         ]
         self.fields['section'].queryset = TrackSection.objects.select_related('track').all()
         self.apply_design_classes()
@@ -159,8 +156,8 @@ class MoveForm(StyledFormMixin, forms.Form):
         try:
             object_type, object_id = value.split(':', 1)
         except ValueError as exc:
-            raise forms.ValidationError('Выберите состав или вагон из списка.') from exc
-        if object_type not in {'train', 'wagon'} or not object_id.isdigit():
+            raise forms.ValidationError('Выберите состав из списка.') from exc
+        if object_type != 'train' or not object_id.isdigit():
             raise forms.ValidationError('Выберите корректный объект для перемещения.')
         return value
 

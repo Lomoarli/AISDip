@@ -364,4 +364,18 @@ def notifications(request):
 
 @role_required(Role.ADMIN)
 def admin_panel(request):
-    return render(request, 'rail/admin_panel.html', {'logs': OperationLog.objects.select_related('user')[:100], 'users_count': User.objects.count()})
+    logs = list(OperationLog.objects.select_related('user')[:100])
+    train_ids = [log.object_id for log in logs if log.object_type == 'Train' and log.object_id]
+    wagon_ids = [log.object_id for log in logs if log.object_type == 'Wagon' and log.object_id]
+    train_map = {t.id: t.train_number for t in Train.objects.filter(id__in=train_ids)}
+    wagon_map = {w.id: w.wagon_number for w in Wagon.objects.filter(id__in=wagon_ids)}
+    for log in logs:
+        if log.object_type == 'Train' and log.object_id in train_map:
+            log.object_label = f"Состав {train_map[log.object_id]}"
+        elif log.object_type == 'Wagon' and log.object_id in wagon_map:
+            log.object_label = f"Вагон {wagon_map[log.object_id]}"
+        elif log.object_type and log.object_id:
+            log.object_label = f"{log.object_type} #{log.object_id}"
+        else:
+            log.object_label = '—'
+    return render(request, 'rail/admin_panel.html', {'logs': logs, 'users_count': User.objects.count()})
