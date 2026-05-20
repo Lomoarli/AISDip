@@ -1,0 +1,37 @@
+{% load static %}
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>АИС учета вагонов</title>
+  <link rel="stylesheet" href="{% static 'rail/style.css' %}">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand"><span class="brand-mark">🚆</span><span>АИС учета вагонов и составов</span></div>
+  {% if user.is_authenticated %}
+  {% with role=user.profile.role.name|default:'' %}
+  <nav class="nav">
+    <a href="/dashboard/">Панель</a>
+    <a href="/trains/">Составы</a>
+    <a href="/wagons/">Вагоны</a>
+    <a href="/tracks/">Пути</a>
+    {% if role == 'dispatcher' or role == 'admin' %}<a href="/track-map/">Схема</a>{% endif %}
+    {% if role == 'operator' or role == 'admin' %}
+      <a href="/documents/">Документы</a>
+      <a href="/reports/">Отчеты</a>
+    {% endif %}
+    <a href="/notifications/">Уведомления</a>
+    {% if role == 'admin' %}<a href="/admin-panel/">Админ</a>{% endif %}
+    <form action="/logout/" method="post" style="display:inline">{% csrf_token %}<button class="secondary">Выход</button></form>
+  </nav>
+  {% endwith %}
+  {% endif %}
+</header>
+<main class="container">
+  {% if messages %}<div class="messages">{% for message in messages %}<div>{{ message }}</div>{% endfor %}</div>{% endif %}
+  {% block content %}{% endblock %}
+</main>
+</body>
+</html>
