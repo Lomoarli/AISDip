@@ -116,6 +116,17 @@ class WagonForm(StyledFormMixin, forms.ModelForm):
         self.apply_design_classes()
 
 
+class WagonEditForm(StyledFormMixin, forms.ModelForm):
+    class Meta:
+        model = Wagon
+        fields = ['wagon_number', 'train', 'cargo_type', 'cargo_quantity', 'cargo_unit', 'cargo_description', 'status', 'arrival_datetime', 'departure_datetime', 'comment']
+        widgets = {'arrival_datetime': forms.DateTimeInput(format='%Y-%m-%dT%H:%M', attrs={'type': 'datetime-local'}), 'departure_datetime': forms.DateTimeInput(format='%Y-%m-%dT%H:%M', attrs={'type': 'datetime-local'})}
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.apply_design_classes()
+
+
 class DocumentForm(StyledFormMixin, forms.ModelForm):
     class Meta:
         model = Document

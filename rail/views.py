@@ -14,7 +14,7 @@ from django.views.decorators.http import require_POST
 from django.utils.decorators import method_decorator
 from django.views.generic import CreateView, DetailView, ListView, UpdateView
 
-from .forms import DocumentForm, MoveForm, OCRConfirmForm, RussianLoginForm, TrainForm, WagonForm
+from .forms import DocumentForm, MoveForm, OCRConfirmForm, RussianLoginForm, TrainForm, WagonEditForm, WagonForm
 from .models import Document, MovementHistory, Notification, OperationLog, RailwayTrack, Role, TrackSection, Train, Wagon
 from .services import confirm_ocr, log_action, move_object, notify, refresh_section_occupancy, run_ocr
 
@@ -54,11 +54,14 @@ def _sync_train_wagons(train):
             wagon.arrival_datetime = train.arrival_datetime
             wagon.departure_datetime = train.departure_datetime
             wagon.save()
-    for wagon in existing.values():
-        wagon.train = train
-        wagon.status = 'departed'
-        wagon.departure_datetime = train.departure_datetime or timezone.now()
-        wagon.save()
+    # Если количество вагонов в составе уменьшили, удаляем вагоны с хвоста нумерации.
+    tail = []
+    for number, wagon in existing.items():
+        suffix = number.replace(f'{train.train_number}-', '', 1)
+        if suffix.isdigit():
+            tail.append((int(suffix), wagon.id))
+    for _, wagon_id in sorted(tail, reverse=True):
+        Wagon.objects.filter(id=wagon_id).delete()
 
 
 class LoginView(auth_views.LoginView):
@@ -200,7 +203,7 @@ class WagonDetail(LoginRequiredMixin, DetailView):
 @method_decorator(role_required(Role.ADMIN, Role.OPERATOR), name='dispatch')
 class WagonUpdate(LoginRequiredMixin, UpdateView):
     model = Wagon
-    form_class = WagonForm
+    form_class = WagonEditForm
     template_name = 'rail/form.html'
 
     def get_success_url(self):
