@@ -7,6 +7,7 @@ from django.utils import timezone
 
 from .models import MovementHistory, Notification, OCRResult, OperationLog, TrackSection, Train, Wagon
 
+pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
 
 def log_action(user, action, obj=None, description=''):
     return OperationLog.objects.create(user=user if getattr(user, 'is_authenticated', False) else None, action=action, object_type=obj.__class__.__name__ if obj else '', object_id=getattr(obj, 'id', None), description=description)
