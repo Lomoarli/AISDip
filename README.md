@@ -77,24 +77,16 @@ http://127.0.0.1:8000/login/
 
 По умолчанию проект запускается на SQLite.
 
-Для запуска с PostgreSQL задайте переменные окружения в PowerShell:
+Для демо сейчас этого достаточно, потом настроим PostgreSQL окружение
 
-```powershell
-$env:POSTGRES_DB="aisdip"
-$env:POSTGRES_USER="postgres"
-$env:POSTGRES_PASSWORD="postgres"
-$env:POSTGRES_HOST="localhost"
-$env:POSTGRES_PORT="5432"
-```
-
-Или в командной строке (cmd):
+Для запуска с PostgreSQL задайте переменные окружения:
 
 ```bat
-set POSTGRES_DB=aisdip
-set POSTGRES_USER=postgres
-set POSTGRES_PASSWORD=postgres
-set POSTGRES_HOST=localhost
-set POSTGRES_PORT=5432
+export POSTGRES_DB=aisdip
+export POSTGRES_USER=postgres
+export POSTGRES_PASSWORD=postgres
+export POSTGRES_HOST=localhost
+export POSTGRES_PORT=5432
 ```
 
 Затем выполните:
@@ -196,6 +188,8 @@ http://127.0.0.1:8000/login/
 ### 4. PostgreSQL (macOS)
 
 По умолчанию проект запускается на SQLite.
+
+Для демо сейчас этого достаточно, потом настроим PostgreSQL окружение
 
 Для запуска с PostgreSQL задайте переменные окружения:
 
